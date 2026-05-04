@@ -1,20 +1,34 @@
 import {
   Box,
   Button,
+  Divider,
   FormControl,
   FormLabel,
   HStack,
   Image,
   Input,
   SimpleGrid,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
   useToast,
   VStack,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import LoadingState from '../components/common/LoadingState';
 import PageHeader from '../components/common/PageHeader';
 import { createSettings, getSettings, updateSettings } from '../services/settingsApi';
+import {
+  createOttPlatform,
+  deleteOttPlatform,
+  getOttPlatforms,
+  updateOttPlatform,
+} from '../services/plansApi';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const THEME_PRESETS = [
@@ -38,6 +52,7 @@ function resolveThemeColor(value) {
 export default function SettingsPage() {
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('general');
   const [settingsId, setSettingsId] = useState(null);
   const [form, setForm] = useState({
     company_name: '',
@@ -49,8 +64,26 @@ export default function SettingsPage() {
   });
   const [logoFile, setLogoFile] = useState(null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [ottPlatforms, setOttPlatforms] = useState([]);
+  const [ottForm, setOttForm] = useState({
+    ott_id: null,
+    ott_name: '',
+    logo_url: '',
+  });
+  const [ottLogoFile, setOttLogoFile] = useState(null);
+  const [removeOttLogo, setRemoveOttLogo] = useState(false);
+  const [isOttSaving, setIsOttSaving] = useState(false);
   const selectedThemeColor = form.theme_color || 'blue';
   const selectedThemeHex = resolveThemeColor(selectedThemeColor);
+
+  const loadOttPlatforms = async () => {
+    try {
+      const res = await getOttPlatforms();
+      setOttPlatforms(res.ottPlatforms || []);
+    } catch (error) {
+      toast({ title: 'Failed to load OTT platforms', description: error.message, status: 'error' });
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -76,8 +109,18 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    loadSettings();
+    Promise.all([loadSettings(), loadOttPlatforms()]);
   }, []);
+
+  const resetOttForm = () => {
+    setOttForm({
+      ott_id: null,
+      ott_name: '',
+      logo_url: '',
+    });
+    setOttLogoFile(null);
+    setRemoveOttLogo(false);
+  };
 
   const onSave = async () => {
     try {
@@ -112,6 +155,64 @@ export default function SettingsPage() {
   const currentLogo = !removeLogo
     ? (logoFile ? URL.createObjectURL(logoFile) : (form.logo_url ? `${API_BASE_URL}${form.logo_url}` : ''))
     : '';
+  const currentOttLogo = !removeOttLogo
+    ? (ottLogoFile ? URL.createObjectURL(ottLogoFile) : (ottForm.logo_url ? `${API_BASE_URL}${ottForm.logo_url}` : ''))
+    : '';
+
+  const onSaveOtt = async () => {
+    if (!ottForm.ott_name.trim()) {
+      toast({ title: 'OTT platform name is required', status: 'warning' });
+      return;
+    }
+
+    try {
+      setIsOttSaving(true);
+      const payload = {
+        ott_name: ottForm.ott_name.trim(),
+        logoFile: ottLogoFile,
+        remove_logo: removeOttLogo,
+      };
+
+      if (ottForm.ott_id) {
+        await updateOttPlatform(ottForm.ott_id, payload);
+        toast({ title: 'OTT platform updated', status: 'success' });
+      } else {
+        await createOttPlatform(payload);
+        toast({ title: 'OTT platform created', status: 'success' });
+      }
+
+      resetOttForm();
+      await loadOttPlatforms();
+    } catch (error) {
+      toast({ title: 'Failed to save OTT platform', description: error.message, status: 'error' });
+    } finally {
+      setIsOttSaving(false);
+    }
+  };
+
+  const onEditOtt = (ott) => {
+    setActiveTab('ott');
+    setOttForm({
+      ott_id: ott.ott_id,
+      ott_name: ott.ott_name || '',
+      logo_url: ott.logo_url || '',
+    });
+    setOttLogoFile(null);
+    setRemoveOttLogo(false);
+  };
+
+  const onDeleteOtt = async (ott) => {
+    try {
+      await deleteOttPlatform(ott.ott_id);
+      toast({ title: 'OTT platform deleted', status: 'success' });
+      if (ottForm.ott_id === ott.ott_id) {
+        resetOttForm();
+      }
+      await loadOttPlatforms();
+    } catch (error) {
+      toast({ title: 'Failed to delete OTT platform', description: error.message, status: 'error' });
+    }
+  };
 
   if (isLoading) {
     return <LoadingState text="Loading application settings..." />;
@@ -121,6 +222,22 @@ export default function SettingsPage() {
     <>
       <PageHeader title="Settings" subtitle="Manage application identity and support contacts." />
 
+      <HStack spacing={3} mb={5}>
+        <Button
+          variant={activeTab === 'general' ? 'solid' : 'outline'}
+          onClick={() => setActiveTab('general')}
+        >
+          General
+        </Button>
+        <Button
+          variant={activeTab === 'ott' ? 'solid' : 'outline'}
+          onClick={() => setActiveTab('ott')}
+        >
+          OTT Platforms
+        </Button>
+      </HStack>
+
+      {activeTab === 'general' ? (
       <Box bg="white" borderWidth="1px" borderRadius="lg" p={5}>
         <VStack spacing={5} align="stretch">
           <FormControl>
@@ -288,6 +405,148 @@ export default function SettingsPage() {
           </HStack>
         </VStack>
       </Box>
+      ) : (
+        <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={5}>
+          <Box bg="white" borderWidth="1px" borderRadius="lg" p={5}>
+            <VStack spacing={5} align="stretch">
+              <Box>
+                <Text fontSize="lg" fontWeight="700">
+                  {ottForm.ott_id ? 'Edit OTT Platform' : 'Create OTT Platform'}
+                </Text>
+                <Text fontSize="sm" color="gray.500">
+                  Upload the OTT icon that will be used in the customer app.
+                </Text>
+              </Box>
+
+              <FormControl>
+                <FormLabel>OTT Platform Name</FormLabel>
+                <Input
+                  value={ottForm.ott_name}
+                  onChange={(e) => setOttForm((p) => ({ ...p, ott_name: e.target.value }))}
+                  placeholder="Netflix"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>OTT Icon</FormLabel>
+                <VStack align="start" spacing={3}>
+                  {currentOttLogo ? (
+                    <Image
+                      src={currentOttLogo}
+                      alt="OTT logo"
+                      boxSize="72px"
+                      objectFit="contain"
+                      borderWidth="1px"
+                      borderRadius="md"
+                      p={2}
+                    />
+                  ) : (
+                    <Text fontSize="sm" color="gray.500">No icon selected</Text>
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    p={1}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setOttLogoFile(file);
+                      if (file) setRemoveOttLogo(false);
+                    }}
+                  />
+                  <HStack>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setOttLogoFile(null);
+                        setRemoveOttLogo(true);
+                      }}
+                    >
+                      Remove Icon
+                    </Button>
+                    <Text fontSize="sm" color="gray.600">Upload to change icon</Text>
+                  </HStack>
+                </VStack>
+              </FormControl>
+
+              <HStack>
+                <Button onClick={onSaveOtt} isLoading={isOttSaving}>
+                  {ottForm.ott_id ? 'Update OTT Platform' : 'Create OTT Platform'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={resetOttForm}
+                  isDisabled={!ottForm.ott_id && !ottForm.ott_name && !ottLogoFile && !removeOttLogo}
+                >
+                  Reset
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+
+          <Box bg="white" borderWidth="1px" borderRadius="lg" p={5}>
+            <VStack spacing={4} align="stretch">
+              <Box>
+                <Text fontSize="lg" fontWeight="700">Manage OTT Platforms</Text>
+                <Text fontSize="sm" color="gray.500">
+                  Edit names, replace icons, or remove platforms from the catalog.
+                </Text>
+              </Box>
+              <Divider />
+              <Box overflowX="auto">
+                <Table size="sm">
+                  <Thead>
+                    <Tr>
+                      <Th>Icon</Th>
+                      <Th>Name</Th>
+                      <Th textAlign="right">Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {ottPlatforms.map((ott) => (
+                      <Tr key={ott.ott_id}>
+                        <Td>
+                          {ott.logo_url ? (
+                            <Image
+                              src={`${API_BASE_URL}${ott.logo_url}`}
+                              alt={ott.ott_name}
+                              boxSize="40px"
+                              objectFit="contain"
+                              borderWidth="1px"
+                              borderRadius="md"
+                              p={1}
+                            />
+                          ) : (
+                            <Text fontSize="xs" color="gray.400">No icon</Text>
+                          )}
+                        </Td>
+                        <Td>{ott.ott_name}</Td>
+                        <Td>
+                          <HStack justify="flex-end">
+                            <Button size="sm" variant="outline" leftIcon={<FiEdit2 />} onClick={() => onEditOtt(ott)}>
+                              Edit
+                            </Button>
+                            <Button size="sm" colorScheme="red" variant="outline" leftIcon={<FiTrash2 />} onClick={() => onDeleteOtt(ott)}>
+                              Delete
+                            </Button>
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))}
+                    {!ottPlatforms.length && (
+                      <Tr>
+                        <Td colSpan={3}>
+                          <Text fontSize="sm" color="gray.500">No OTT platforms found.</Text>
+                        </Td>
+                      </Tr>
+                    )}
+                  </Tbody>
+                </Table>
+              </Box>
+            </VStack>
+          </Box>
+        </SimpleGrid>
+      )}
     </>
   );
 }

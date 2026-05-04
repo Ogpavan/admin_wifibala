@@ -18,6 +18,34 @@ export function getOttPlatforms() {
   return apiRequest('/api/plans/ott-platforms');
 }
 
+function toOttFormData(payload) {
+  const form = new FormData();
+  form.append('ott_name', payload.ott_name || '');
+  if (payload.logoFile) form.append('logo', payload.logoFile);
+  if (payload.remove_logo) form.append('remove_logo', 'true');
+  return form;
+}
+
+export function createOttPlatform(payload) {
+  return apiRequest('/api/plans/ott-platforms', {
+    method: 'POST',
+    body: toOttFormData(payload),
+  });
+}
+
+export function updateOttPlatform(id, payload) {
+  return apiRequest(`/api/plans/ott-platforms/${id}`, {
+    method: 'PUT',
+    body: toOttFormData(payload),
+  });
+}
+
+export function deleteOttPlatform(id) {
+  return apiRequest(`/api/plans/ott-platforms/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export function createPlan(payload) {
   return apiRequest('/api/plans/create', {
     method: 'POST',
