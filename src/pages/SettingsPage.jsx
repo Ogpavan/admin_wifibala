@@ -30,7 +30,7 @@ import {
   updateOttPlatform,
 } from '../services/plansApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.askcollege.in';
 const THEME_PRESETS = [
   { key: 'blue', color: '#4169e1', label: 'Blue' },
   { key: 'green', color: '#10b981', label: 'Green' },

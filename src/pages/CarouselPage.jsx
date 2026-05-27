@@ -151,14 +151,14 @@ export default function CarouselPage() {
       render: (row) => (
         <HStack>
           <Image
-            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${row.image_url}`}
+            src={`${import.meta.env.VITE_API_BASE_URL || 'https://api.askcollege.in'}${row.image_url}`}
             alt={`Slide ${row.position}`}
             boxSize="48px"
             objectFit="cover"
             borderRadius="md"
             cursor="pointer"
             onClick={() => {
-              setPreviewImageUrl(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${row.image_url}`);
+              setPreviewImageUrl(`${import.meta.env.VITE_API_BASE_URL || 'https://api.askcollege.in'}${row.image_url}`);
               previewModal.onOpen();
             }}
             fallback={<Box boxSize="48px" bg="gray.100" borderRadius="md" />}

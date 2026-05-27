@@ -21,6 +21,8 @@ import {
   MdWorkspacePremium,
   MdImage,
   MdReportProblem,
+  MdCardGiftcard,
+  MdSwapHoriz,
   MdSettings,
 } from 'react-icons/md';
 import { getSettings } from '../../services/settingsApi';
@@ -34,10 +36,12 @@ const navItems = [
   { label: 'VIP Offers', icon: MdWorkspacePremium, to: '/vip-offers' },
   { label: 'Carousel', icon: MdImage, to: '/carousel' },
   { label: 'Complaints', icon: MdReportProblem, to: '/complaints' },
+  { label: 'Port Change Requests', icon: MdSwapHoriz, to: '/port-change-requests' },
+  { label: 'Referrals', icon: MdCardGiftcard, to: '/referrals' },
   { label: 'Settings', icon: MdSettings, to: '/settings' },
 ];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.askcollege.in';
 
 function SidebarContent({ onNavigate, logoUrl }) {
   return (
