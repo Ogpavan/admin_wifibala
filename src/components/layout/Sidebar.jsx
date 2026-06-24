@@ -23,6 +23,7 @@ import {
   MdReportProblem,
   MdCardGiftcard,
   MdSwapHoriz,
+  MdNotificationsActive,
   MdSettings,
 } from 'react-icons/md';
 import { getSettings } from '../../services/settingsApi';
@@ -38,6 +39,7 @@ const navItems = [
   { label: 'Complaints', icon: MdReportProblem, to: '/complaints' },
   { label: 'Port Change Requests', icon: MdSwapHoriz, to: '/port-change-requests' },
   { label: 'Referrals', icon: MdCardGiftcard, to: '/referrals' },
+  { label: 'Native Notification', icon: MdNotificationsActive, to: '/native-notifications' },
   { label: 'Settings', icon: MdSettings, to: '/settings' },
 ];
 
